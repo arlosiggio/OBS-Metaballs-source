@@ -1,0 +1,43 @@
+uniform float4x4 ViewProj;
+uniform float4x4 color_matrix;
+uniform float3 color_range_min = {0.0, 0.0, 0.0};
+uniform float3 color_range_max = {1.0, 1.0, 1.0};
+uniform texture2d image;
+uniform float4 metaballspos[20];
+uniform int metaballcount;
+uniform float4 color;
+uniform bool isoline;
+struct VertInOut {
+	float4 pos : POSITION;
+	float4 col  : COLOR;
+};
+VertInOut VSDefault(VertInOut vert_in)
+{
+	VertInOut vert_out;
+	vert_out.pos = mul(float4(vert_in.pos.xyz, 1.0), ViewProj);
+	vert_out.col = vert_in.col;
+	return vert_out;
+}
+float4 PSDrawMetaBall(VertInOut vert_in) : TARGET
+{
+	int m = 0;
+	float k = 0.0;
+	while (m<metaballcount){
+		float dist = 10.0/distance(metaballspos[m].xy, vert_in.pos.xy);
+		k += dist;
+		m+=1;
+	}
+	if(k < 1) k = pow(k,10);
+	else if(isoline && k > 1) k = pow(k,-10);
+	
+	return float4(mul(k,color.bgr),1.0);
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(vert_in);
+		pixel_shader  = PSDrawMetaBall(vert_in);
+	}
+}
